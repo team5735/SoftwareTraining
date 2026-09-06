@@ -42,7 +42,7 @@ done
 echo downloading robot code to ~/FRC
 if [[ ! -d ~/FRC ]]; then
     git clone https://github.com/team5735/FRC ~/FRC
-    cat > ~/FRC/.git/hooks/pre-push <<END
+    cat > ~/FRC/.git/hooks/pre-push <<'END'
 #!/bin/bash
 set -e -o pipefail
 PS4=$'P \t$EPOCHREALTIME '
