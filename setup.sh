@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 function die {
     echo -e "$1"
@@ -11,7 +11,7 @@ function die {
 echo installing necessary packages
 needed=(wget pv pigz tar git gh libicu-dev)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
-[[ -z "$missing_pkgs" ]] || sudo apt-get install --yes "${missing_pkgs[@]}"
+[[ -z "$missing_pkgs" ]] || (sudo apt-get update && sudo apt-get install --yes "${missing_pkgs[@]}")
 
 set +e
 dir="WPILib_Linux-x64-$1"
@@ -21,18 +21,21 @@ err="$(wget --spider $url 2>&1)"
 [[ $? -ne 0 ]] && die "$(echo "seems like i can't download WPILib right now. try again later\nerror:\n")$err"
 set -e
 
+firstname="${USER%%_*}"
+lastname="${USER##_*}"
 while true; do
-    read -p "first name: " firstname
-    read -p "last name: " lastname
-    echo name: "$firstname" "$lastname"
+    echo name: "${firstname@u}" "${lastname@u}"
     email="${firstname@L}"_"${lastname@L}"@student.waylandps.org
     echo email: "$email"
-    read -p "is this right (Y/n)? " correct
-    ! [[ -z "$correct" || "${correct@L}" == y ]] && continue
+    read -p "is this correct (Y/n)? " correct
+    if [[ -z "$correct" || "${correct@L}" == y ]]; then
+        git config --global user.name "${firstname@u}" "${lastname@u}"
+        git config --global user.email "$email"
+        break
+    fi
 
-    git config --global user.name "$firstname" "$lastname"
-    git config --global user.email "$email"
-    break
+    read -p "first name: " firstname
+    read -p "last name: " lastname
 done
 
 echo downloading robot code to ~/FRC
