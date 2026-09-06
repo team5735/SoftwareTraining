@@ -9,7 +9,7 @@ function die {
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
 
 echo installing necessary packages
-needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3)
+needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 [[ -z "$missing_pkgs" ]] || (sudo apt-get update && sudo apt-get install --yes "${missing_pkgs[@]}")
 
@@ -42,6 +42,24 @@ done
 echo downloading robot code to ~/FRC
 if [[ ! -d ~/FRC ]]; then
     git clone https://github.com/team5735/FRC ~/FRC
+    cat > ~/FRC/.git/hooks/pre-push <<END
+#!/bin/bash
+set -e -o pipefail
+# PS4=$'P \t$EPOCHREALTIME '
+
+zeroes=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+found_head=0
+head="$(git rev-parse HEAD)"
+while read local_ref local_id remote_ref remote_id; do
+    # find HEAD
+    [[ "$local_id" = "$zeroes" ]] && continue
+    [[ "$local_id" != "$head" ]] && continue
+
+    "$(git rev-parse --show-toplevel)"/format.java.sh --no-ask
+    found_head=1
+done
+END
 else
     cat <<END
 ~/FRC is already present, not overwriting
