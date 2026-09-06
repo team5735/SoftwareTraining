@@ -45,7 +45,7 @@ if [[ ! -d ~/FRC ]]; then
     cat > ~/FRC/.git/hooks/pre-push <<END
 #!/bin/bash
 set -e -o pipefail
-# PS4=$'P \t$EPOCHREALTIME '
+PS4=$'P \t$EPOCHREALTIME '
 
 zeroes=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
 
