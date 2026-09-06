@@ -9,7 +9,7 @@ function die {
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
 
 echo installing necessary packages
-needed=(wget pv pigz tar git gh)
+needed=(wget pv pigz tar git gh libicu-dev)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 [[ -z "$missing_pkgs" ]] || sudo apt-get install --yes "${missing_pkgs[@]}"
 
