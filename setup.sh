@@ -57,9 +57,10 @@ gh auth login --git-protocol HTTPS --hostname github.com --web || true
 trap SIGINT
 
 echo downloading WPILib
-wget --quiet --show-progress "$url" -O $file
+wget --quiet --show-progress "$url" -O "$file"
 rm --recursive --force $dir
-size=$(pigz --list $file | cut --delimiter ' ' --fields 2)
-unpigz --to-stdout $file | pv --interval 0.2 --name extract --size $size | tar --extract --file -
+size=$(pigz --list "$file" | cut --delimiter ' ' --fields 2)
+unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar --extract --file -
+rm "$file"
 echo running the WPILib installer
 "$dir"/WPILibInstaller-CLI --yes --install-mode all
