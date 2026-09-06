@@ -30,7 +30,7 @@ while true; do
     echo email: "$email"
     read -p "is this correct (Y/n)? " correct
     if [[ -z "$correct" || "${correct@L}" == y ]]; then
-        git config --global user.name "${firstname@u}" "${lastname@u}"
+        git config --global user.name "${firstname@u} ${lastname@u}"
         git config --global user.email "$email"
         break
     fi
