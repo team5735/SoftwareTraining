@@ -51,7 +51,7 @@ END
 fi
 
 echo logging into GitHub. if you do not have an account you can make it now
-echo to cancel the login, use Ctrl+C in the terminal
+echo to copy the one-time-code, select it and use Ctrl+Shift+C
 echo unless you know better, you will want to authenticate git with your github credentials
 trap "echo cancelled auth" SIGINT
 gh auth login --git-protocol HTTPS --hostname github.com --web || true
