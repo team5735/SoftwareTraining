@@ -65,3 +65,9 @@ unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar
 rm "$file"
 echo running the WPILib installer
 "$dir"/WPILibInstaller-CLI --yes --install-mode all
+
+year="${ver%%\.*}"
+alpha_suffix="${ver#*-}";
+[[ "$alpha_suffix" = "$ver" ]] && alpha_suffix=
+dir="$year${alpha_suffix:+_${alpha_suffix//-/}}"
+~/.local/share/wpilib/"$dir"/vscode/*/code ~/FRC
