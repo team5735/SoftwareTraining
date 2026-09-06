@@ -9,14 +9,15 @@ function die {
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
 
 echo installing necessary packages
-needed=(wget pv pigz tar git gh libicu-dev)
+needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 [[ -z "$missing_pkgs" ]] || (sudo apt-get update && sudo apt-get install --yes "${missing_pkgs[@]}")
 
 set +e
-dir="WPILib_Linux-x64-$1"
+ver="$1"
+dir="WPILib_Linux-x64-$ver"
 file="$dir.tar.gz"
-url="https://packages.wpilib.workers.dev/installer/v$1/$file"
+url="https://packages.wpilib.workers.dev/installer/v$ver/$file"
 err="$(wget --spider $url 2>&1)"
 [[ $? -ne 0 ]] && die "$(echo "seems like i can't download WPILib right now. try again later\nerror:\n")$err"
 set -e
