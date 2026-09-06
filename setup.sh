@@ -22,7 +22,7 @@ err="$(wget --spider $url 2>&1)"
 set -e
 
 firstname="${USER%%_*}"
-lastname="${USER##_*}"
+lastname="${USER##*_}"
 while true; do
     echo name: "${firstname@u}" "${lastname@u}"
     email="${firstname@L}"_"${lastname@L}"@student.waylandps.org
