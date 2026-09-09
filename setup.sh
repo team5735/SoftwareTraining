@@ -8,10 +8,26 @@ function die {
 
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
 
+firstname="${USER%%_*}"
+lastname="${USER##*_}"
+while true; do
+    echo name: "${firstname@u}" "${lastname@u}"
+    email="${firstname@L}"_"${lastname@L}"@student.waylandps.org
+    echo email: "$email"
+    read -p "is this correct (Y/n)? " correct
+    [[ -z "$correct" || "${correct@L}" == y ]] && break
+    read -p "first name: " firstname
+    read -p "last name: " lastname
+done
+
 echo installing necessary packages
 needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 [[ -z "$missing_pkgs" ]] || (sudo apt-get update && sudo apt-get install --yes "${missing_pkgs[@]}")
+
+# has to come after package installation
+git config --global user.name "${firstname@u} ${lastname@u}"
+git config --global user.email "$email"
 
 set +e
 ver="$1"
@@ -21,23 +37,6 @@ url="https://packages.wpilib.workers.dev/installer/v$ver/$file"
 err="$(wget --spider $url 2>&1)"
 [[ $? -ne 0 ]] && die "$(echo "seems like i can't download WPILib right now. try again later\nerror:\n")$err"
 set -e
-
-firstname="${USER%%_*}"
-lastname="${USER##*_}"
-while true; do
-    echo name: "${firstname@u}" "${lastname@u}"
-    email="${firstname@L}"_"${lastname@L}"@student.waylandps.org
-    echo email: "$email"
-    read -p "is this correct (Y/n)? " correct
-    if [[ -z "$correct" || "${correct@L}" == y ]]; then
-        git config --global user.name "${firstname@u} ${lastname@u}"
-        git config --global user.email "$email"
-        break
-    fi
-
-    read -p "first name: " firstname
-    read -p "last name: " lastname
-done
 
 echo downloading robot code to ~/FRC
 if [[ ! -d ~/FRC ]]; then
