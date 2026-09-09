@@ -2,7 +2,7 @@
 set -e
 
 function die {
-    echo -e "$1"
+    echo "$1"
     exit 1
 }
 
@@ -35,7 +35,7 @@ dir="WPILib_Linux-x64-$ver"
 file="$dir.tar.gz"
 url="https://packages.wpilib.workers.dev/installer/v$ver/$file"
 err="$(wget --spider $url 2>&1)"
-[[ $? -ne 0 ]] && die "$(echo "seems like i can't download WPILib right now. try again later\nerror:\n")$err"
+[[ $? -ne 0 ]] && die $'seems like i can\'t download WPILib right now. try again later\nerror:\n\n'$err
 set -e
 
 echo downloading robot code to ~/FRC
