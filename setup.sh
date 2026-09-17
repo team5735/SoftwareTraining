@@ -59,6 +59,7 @@ while read local_ref local_id remote_ref remote_id; do
     found_head=1
 done
 END
+    chmod +x ~/FRC/.git/hooks/pre-push
 else
     cat <<END
 ~/FRC is already present, not overwriting
