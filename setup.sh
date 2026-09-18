@@ -53,7 +53,6 @@ while true; do
     read -p "last name: " lastname
 done
 
-echo installing necessary packages
 needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 if [[ "$missing_pkgs" ]]; then
