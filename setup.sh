@@ -103,19 +103,26 @@ END
 else
     cat <<END
 ~/FRC is already present, not overwriting
-to redownload the repository, run the following in your terminal:
+to redownload the repository, you can run the setup script again
+if you don't want to, run this command; you'll be missing the pre-push hook, though
 rm -rf ~/FRC; git clone https://github.com/team5735/FRC ~/FRC
 END
 fi
 
-echo logging into GitHub. if you do not have an account you can make it now
-echo to copy the one-time-code, select it and use Ctrl+Shift+C
-echo unless you know better, you will want to authenticate git with your github credentials
-trap "echo cancelled auth" SIGINT
-gh auth login --git-protocol HTTPS --hostname github.com --web || true
-trap SIGINT
+if ! git config get credential.https://github.com.helper; then
+    echo logging into GitHub. if you do not have an account you can make it now
+    echo to copy the one-time-code, select it and use Ctrl+Shift+C
+    echo unless you know better, you will want to authenticate git with your github credentials
+    trap "echo cancelled auth" SIGINT
+    gh auth login --git-protocol HTTPS --hostname github.com --web || true
+    trap SIGINT
+else
+    echo seems like you\'re already logged in with \`gh\'
+    echo to log in again, cancel the script with Ctrl+C, run the following command, and rerun the script:
+    echo git config unset --all credential.https://github.com.helper
+fi
 
-echo downloading WPILib
+echo downloading WPILib version "$ver"
 wget --quiet --show-progress "$url" -O "$file"
 rm --recursive --force $dir
 size=$(pigz --list "$file" | cut --delimiter ' ' --fields 2)
