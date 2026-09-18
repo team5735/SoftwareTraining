@@ -109,7 +109,7 @@ rm -rf ~/FRC; git clone https://github.com/team5735/FRC ~/FRC
 END
 fi
 
-if ! git config get credential.https://github.com.helper; then
+if ! git config get credential.https://github.com.helper >/dev/null 2>&1; then
     echo logging into GitHub. if you do not have an account you can make it now
     echo to copy the one-time-code, select it and use Ctrl+Shift+C
     echo unless you know better, you will want to authenticate git with your github credentials
