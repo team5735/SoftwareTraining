@@ -66,12 +66,14 @@ set +e
 ver="$1"
 if [[ "${ver%%\.*}" -gt 2026 ]]; then
     arch="Linux-x64"
+    subdir=""
 else
     arch="Linux"
+    subdir="Linux/"
 fi
 dir="WPILib_$arch-$ver"
 file="$dir.tar.gz"
-url="https://packages.wpilib.workers.dev/installer/v$ver/$file"
+url="https://packages.wpilib.workers.dev/installer/v$ver/$subdir$file"
 err="$(wget --spider $url 2>&1)"
 [[ $? -ne 0 ]] && die $'seems like i can\'t download WPILib right now. try again later\nerror:\n\n'$err
 set -e
