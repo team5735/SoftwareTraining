@@ -6,7 +6,40 @@ function die {
     exit 1
 }
 
+function lookin {
+    [[ ! -d "$1" ]] && return
+    realpath "$1"/*
+}
+
+function kill_dists {
+    set +e
+    shopt -s nullglob
+    wpilibs=()
+    wpilibs+=($(lookin ~/.local/share/wpilib/))
+    wpilibs+=($(lookin ~/wpilib/))
+    [[ -z "$wpilibs" ]] && echo nothing installed && exit 0
+
+    echo found the following installations:
+    declare -i index=1
+    for year in "${wpilibs[@]}"; do printf '(%d) WPILib at %s\n' $index "${year/$HOME/~}"; index+=1; done
+    read -p "choose one to delete; anything save a valid index cancels: " choice
+    [[ "$choice" -lt 1 || "$choice" -gt "${#wpilibs[@]}" ]] && echo canceled && exit 0
+    chosen="${wpilibs[$(( $choice - 1  ))]}"
+    read -p "delete ${chosen/$HOME/~} (y/N)? " may_delete
+    [[ "$may_delete" != "y" ]] && echo nothing was changed && exit 0
+
+    set -e
+    where=$(realpath $chosen)
+    rm -vrf $where
+    year=$(basename "$where")
+    rm -v ~/.local/share/applications/*"$year".desktop
+    rm -v ~/Desktop/*"$year".desktop
+    echo done~!
+    exit 0
+}
+
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
+[[ "$1" = "--kill" ]] && kill_dists
 
 firstname="${USER%%_*}"
 lastname="${USER##*_}"
