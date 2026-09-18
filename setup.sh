@@ -148,7 +148,7 @@ else
     echo installation instructions:
     echo 'press "Start", "Install for this User", "Download for this computer only"'
     echo when it becomes available, press the button labeled '"Next"'
-    echo after installation has succeded, press '"Finish"'
+    echo after installation has succeeded, press '"Finish"'
     "$dir"/WPILibInstaller
 fi
 echo
