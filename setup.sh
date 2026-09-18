@@ -41,6 +41,9 @@ function kill_dists {
 [[ -z "$1" ]] && die "make sure you copied the command correctly. i need to know which WPILib version to install"
 [[ "$1" = "--kill" ]] && kill_dists
 
+ver="$1"
+[[ "${ver%%\.*}" -gt 2026 ]] && 2027_format=true
+
 firstname="${USER%%_*}"
 lastname="${USER##*_}"
 while true; do
@@ -57,8 +60,10 @@ needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 if [[ "$missing_pkgs" ]]; then
     echo installing "${#missing_pkgs[@]}" packages
-    sudo apt-get update >/dev/null
-    sudo apt-get install --yes "${missing_pkgs[@]}" >/dev/null
+    [[ "$2027_format" != true ]] && echo please stick around, you need to finish installation yourself
+    sudo apt-get update
+    sudo apt-get install --yes "${missing_pkgs[@]}"
+    echo
 fi
 
 # has to come after package installation
@@ -71,13 +76,11 @@ function compat {
 }
 
 set +e
-ver="$1"
-[[ "${ver%%\.*}" -gt 2026 ]] && 2027_format=true
 dir="WPILib_$(compat Linux-x64 Linux)-$ver"
 file="$dir.tar.gz"
-url="https://packages.wpilib.workers.dev/installer/v$ver/$(compat Linux-x64 Linux)$file"
-err="$(wget --spider $url 2>&1)"
-[[ $? -ne 0 ]] && die $'seems like i can\'t download WPILib right now. try again later\nerror:\n\n'$err
+url="https://packages.wpilib.workers.dev/installer/v$ver/$(compat "" Linux/)$file"
+err="$(wget --spider "$url" 2>&1)"
+[[ $? -ne 0 ]] && die $'seems like i can\'t download WPILib right now. try again later\nerror:\n\n'"$err"
 set -e
 
 echo downloading robot code to ~/FRC
@@ -110,6 +113,7 @@ if you don't want to, run this command; you'll be missing the pre-push hook, tho
 rm -rf ~/FRC; git clone https://github.com/team5735/FRC ~/FRC
 END
 fi
+echo
 
 if ! git config get credential.https://github.com.helper >/dev/null 2>&1; then
     echo logging into GitHub. if you do not have an account you can make it now
@@ -123,27 +127,35 @@ else
     echo to log in again, cancel the script with Ctrl+C, run the following command, and rerun the script:
     echo git config unset --all credential.https://github.com.helper
 fi
+echo
 
-echo downloading WPILib version "$ver"
-wget --quiet --show-progress "$url" -O "$file"
-rm --recursive --force $dir
-size=$(pigz --list "$file" | cut --delimiter ' ' --fields 2)
-unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar --extract --file -
-rm "$file"
-echo running the WPILib installer
+if [[ ! -d "$dir" ]]; then
+    echo downloading...
+    wget --quiet --show-progress "$url" -O "$file"
+    rm --recursive --force "$dir"
+    size=$(pigz --list "$file" | cut --delimiter ' ' --fields 2)
+    unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar --extract --file -
+    rm "$file"
+else
+    echo seems like you already have WPILib installed \(found "$dir"\), skipping download
+fi
+echo
+
 if [[ "$2027_format" = true ]]; then
+    echo running the WPILib installer
     "$dir"/WPILibInstaller-CLI --yes --install-mode all
 else
-    echo
     echo installation instructions:
     echo 'press "Start", "Install for this User", "Download for this computer only"'
     echo when it becomes available, press the button labeled '"Next"'
     echo after installation has succeded, press '"Finish"'
     "$dir"/WPILibInstaller
 fi
+echo
 
 year="${ver%%\.*}"
 alpha_suffix="${ver#*-}";
 [[ "$alpha_suffix" = "$ver" ]] && alpha_suffix=
 dir="$year${alpha_suffix:+_${alpha_suffix//-/}}"
+echo all set. now launching the correct vscode so you can pin it to your taskbar
 $(compat ~/.local/share/wpilib ~/wpilib)/"$dir"/vscode/*/code ~/FRC
