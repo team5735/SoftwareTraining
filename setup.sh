@@ -21,11 +21,11 @@ function kill_dists {
 
     echo found the following installations:
     declare -i index=1
-    for year in "${wpilibs[@]}"; do printf '(%d) WPILib at %s\n' $index "${year/$HOME/~}"; index+=1; done
+    for year in "${wpilibs[@]}"; do printf '(%d) WPILib at %s\n' $index "~${year#$HOME}"; index+=1; done
     read -p "choose one to delete; anything save a valid index cancels: " choice
     [[ "$choice" -lt 1 || "$choice" -gt "${#wpilibs[@]}" ]] && echo canceled && exit 0
     chosen="${wpilibs[$(( $choice - 1  ))]}"
-    read -p "delete ${chosen/$HOME/~} (y/N)? " may_delete
+    read -p "delete ~${chosen#$HOME} (y/N)? " may_delete
     [[ "$may_delete" != "y" ]] && echo nothing was changed && exit 0
 
     set -e
@@ -56,24 +56,27 @@ done
 echo installing necessary packages
 needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
-[[ -z "$missing_pkgs" ]] || (sudo apt-get update && sudo apt-get install --yes "${missing_pkgs[@]}")
+if [[ "$missing_pkgs" ]]; then
+    echo installing "${#missing_pkgs[@]}" packages
+    sudo apt-get update >/dev/null
+    sudo apt-get install --yes "${missing_pkgs[@]}" >/dev/null
+fi
 
 # has to come after package installation
 git config --global user.name "${firstname@u} ${lastname@u}"
 git config --global user.email "$email"
 
+# $(compat a b) is a when installing a version >= 2027, otherwise b
+function compat {
+    [[ "$2027_format" = true ]] && echo "$1" || echo "$2"
+}
+
 set +e
 ver="$1"
-if [[ "${ver%%\.*}" -gt 2026 ]]; then
-    arch="Linux-x64"
-    subdir=""
-else
-    arch="Linux"
-    subdir="Linux/"
-fi
-dir="WPILib_$arch-$ver"
+[[ "${ver%%\.*}" -gt 2026 ]] && 2027_format=true
+dir="WPILib_$(compat Linux-x64 Linux)-$ver"
 file="$dir.tar.gz"
-url="https://packages.wpilib.workers.dev/installer/v$ver/$subdir$file"
+url="https://packages.wpilib.workers.dev/installer/v$ver/$(compat Linux-x64 Linux)$file"
 err="$(wget --spider $url 2>&1)"
 [[ $? -ne 0 ]] && die $'seems like i can\'t download WPILib right now. try again later\nerror:\n\n'$err
 set -e
@@ -129,10 +132,19 @@ size=$(pigz --list "$file" | cut --delimiter ' ' --fields 2)
 unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar --extract --file -
 rm "$file"
 echo running the WPILib installer
-"$dir"/WPILibInstaller-CLI --yes --install-mode all
+if [[ "$2027_format" = true ]]; then
+    "$dir"/WPILibInstaller-CLI --yes --install-mode all
+else
+    echo
+    echo installation instructions:
+    echo 'press "Start", "Install for this User", "Download for this computer only"'
+    echo when it becomes available, press the button labeled '"Next"'
+    echo after installation has succeded, press '"Finish"'
+    "$dir"/WPILibInstaller
+fi
 
 year="${ver%%\.*}"
 alpha_suffix="${ver#*-}";
 [[ "$alpha_suffix" = "$ver" ]] && alpha_suffix=
 dir="$year${alpha_suffix:+_${alpha_suffix//-/}}"
-~/.local/share/wpilib/"$dir"/vscode/*/code ~/FRC
+$(compat ~/.local/share/wpilib ~/wpilib)/"$dir"/vscode/*/code ~/FRC
