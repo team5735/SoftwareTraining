@@ -31,7 +31,12 @@ git config --global user.email "$email"
 
 set +e
 ver="$1"
-dir="WPILib_Linux-x64-$ver"
+if [[ "${ver%%\.*}" -gt 2026 ]]; then
+    arch="Linux-x64"
+else
+    arch="Linux"
+fi
+dir="WPILib_$arch-$ver"
 file="$dir.tar.gz"
 url="https://packages.wpilib.workers.dev/installer/v$ver/$file"
 err="$(wget --spider $url 2>&1)"
