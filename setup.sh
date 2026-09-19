@@ -34,6 +34,7 @@ function kill_dists {
     year=$(basename "$where")
     rm -v ~/.local/share/applications/*"$year".desktop
     rm -v ~/Desktop/*"$year".desktop
+    sudo update-desktop-database
     echo done~!
     exit 0
 }
