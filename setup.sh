@@ -138,7 +138,7 @@ if [[ ! -d "$dir" ]]; then
     unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size $size | tar --extract --file -
     rm "$file"
 else
-    echo seems like you already have WPILib installed \(found "$dir"\), skipping download
+    echo seems like you already have WPILib downloaded \(found "$dir"\), skipping download
 fi
 echo
 
