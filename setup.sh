@@ -43,7 +43,7 @@ function kill_dists {
 [[ "$1" = "--kill" ]] && kill_dists
 
 ver="$1"
-[[ "${ver%%\.*}" -gt 2026 ]] && 2027_format=true
+[[ "${ver%%\.*}" -gt 2026 ]] && is_2027=true
 
 firstname="${USER%%_*}"
 lastname="${USER##*_}"
@@ -57,11 +57,11 @@ while true; do
     read -p "last name: " lastname
 done
 
-needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format)
+needed=(wget pv pigz tar git gh libicu-dev libnspr4 libnss3 clang-format mesa-utils)
 missing_pkgs=($(comm -23 <(printf '%s\n' "${needed[@]}" | sort) <(dpkg-query --show --showformat '${Package}\n')))
 if [[ "$missing_pkgs" ]]; then
     echo installing "${#missing_pkgs[@]}" packages
-    [[ "$2027_format" != true ]] && echo please stick around, you need to finish installation yourself
+    [[ "$is_2027" != true ]] && echo please stick around, you need to finish installation yourself
     sudo apt-get update
     sudo apt-get install --yes "${missing_pkgs[@]}"
     echo
@@ -73,7 +73,7 @@ git config --global user.email "$email"
 
 # $(compat a b) is a when installing a version >= 2027, otherwise b
 function compat {
-    [[ "$2027_format" = true ]] && echo "$1" || echo "$2"
+    [[ "$is_2027" = true ]] && echo "$1" || echo "$2"
 }
 
 set +e
@@ -142,7 +142,7 @@ else
 fi
 echo
 
-if [[ "$2027_format" = true ]]; then
+if [[ "$is_2027" = true ]]; then
     echo running the WPILib installer
     "$dir"/WPILibInstaller-CLI --yes --install-mode all
 else
@@ -154,9 +154,41 @@ else
 fi
 echo
 
-year="${ver%%\.*}"
-alpha_suffix="${ver#*-}";
-[[ "$alpha_suffix" = "$ver" ]] && alpha_suffix=
-dir="$year${alpha_suffix:+_${alpha_suffix//-/}}"
-echo all set. now launching the correct vscode so you can pin it to your taskbar
-$(compat ~/.local/share/wpilib ~/wpilib)/"$dir"/vscode/*/code ~/FRC
+echo finished installing. you should be able to find the VSCode for $ver in the Linux Apps folder of the G menu
+echo '(to open the G menu, press the G/"super" key between fn and alt)'
+echo
+
+if glxinfo -B | grep "Accelerated: yes" > /dev/null; then
+    echo GPU acceleration is already set up, yay
+    read -p "launch VSCode (Y/n)?" should_launch
+    if [[ -z "$should_launch" || "${should_launch@L}" = "y" ]]; then
+        year="${ver%%\.*}"
+        alpha_suffix="${ver#*-}";
+        [[ "$alpha_suffix" = "$ver" ]] && alpha_suffix=
+        dir="$year${alpha_suffix:+_${alpha_suffix//-/}}"
+        $(compat ~/.local/share/wpilib ~/wpilib)/"$dir"/vscode/*/code ~/FRC
+    fi
+
+else
+    echo <<END
+it seems like GPU acceleration isn't set up! GPU acceleration improves battery life and performance but isn't needed
+if you followed the "optional but recommended steps" during setup, i can enable GPU acceleration for you
+if you didn't follow those steps and still want GPU acceleration, remove the Linux VM via settings and do everything again ;)
+
+if you proceed, the VM has to be restarted for the changes to take effect
+unfortunately, the Chromebook's VM architecture prevents that from being entirely doable within a script
+so, this script will power off the VM, but you need to launch it again by opening a terminal before launching e.g. VSCode
+END
+    read -p "enable GPU acceleration and shut down VM (y/N)?" should_enable
+    if [[ "${should_enable@L}" = "y" ]]; then
+        # add self to 'video' and 'render' groups
+        # the VM ships with the user in 'video' but not 'render'
+        # add to both to be safe
+        sudo usermod -aG video "$USER"
+        sudo usermod -aG render "$USER"
+        # an alternative to poweroff is loginctl kill-user or terminate-user
+        # but the latter requires opening a terminal twice to get back to normal (???)
+        # and this is easier to understand
+        sudo systemctl poweroff
+    fi
+fi
