@@ -156,11 +156,11 @@ echo
 
 echo finished installing. you should be able to find the VSCode for $ver in the Linux Apps folder of the G menu
 echo '(to open the G menu, press the G/"super" key between fn and alt)'
-echo
 
 if glxinfo -B | grep "Accelerated: yes" > /dev/null; then
+    echo
     echo GPU acceleration is already set up, yay
-    read -p "launch VSCode (Y/n)?" should_launch
+    read -p "launch VSCode (Y/n)? " should_launch
     if [[ -z "$should_launch" || "${should_launch@L}" = "y" ]]; then
         year="${ver%%\.*}"
         alpha_suffix="${ver#*-}";
@@ -179,7 +179,7 @@ if you proceed, the VM has to be restarted for the changes to take effect
 unfortunately, the Chromebook's VM architecture prevents that from being entirely doable within a script
 so, this script will power off the VM, but you need to launch it again by opening a terminal before launching e.g. VSCode
 END
-    read -p "enable GPU acceleration and shut down VM (y/N)?" should_enable
+    read -p "enable GPU acceleration and shut down VM (y/N)? " should_enable
     if [[ "${should_enable@L}" = "y" ]]; then
         # add self to 'video' and 'render' groups
         # the VM ships with the user in 'video' but not 'render'
