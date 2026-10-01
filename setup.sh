@@ -101,7 +101,8 @@ while read local_ref local_id remote_ref remote_id; do
     [[ "$local_id" = "$zeroes" ]] && continue
     [[ "$local_id" != "$head" ]] && continue
 
-    "$(git rev-parse --show-toplevel)"/format.java.sh --no-ask
+    response="$("$(git rev-parse --show-toplevel)"/format.java.sh --no-ask)"
+    [[ "$response" != "nothing formatted" ]] && echo please push again && exit 1
     found_head=1
 done
 END
