@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
 if ! command -v lua > /dev/null; then
     sudo apt-get install -qq lua5.4
@@ -7,11 +7,10 @@ if ! command -v lua > /dev/null; then
 fi
 
 # no options is equivalent to:
-# --setup-git --install-needed-pkgs --gh-login --clone-frc-repo=~/FRC
-# --create-pre-push --install-wpilib=$1
+# --setup-git --install-needed-pkgs --gh-login --clone-frc-repo=~/FRC --create-pre-push --install-wpilib=$1
 opts=$(getopt --options "u::gilc::pw:" --longoptions \
-    "uninstall-wpilib::,setup-git,install-needed-pkgs,gh-login," \
-    "clone-frc-repo::,create-pre-push,install-wpilib:" --name "setup.sh" -- "$@")
+       "uninstall-wpilib::,setup-git,install-needed-pkgs,gh-login" --longoptions \
+       "clone-frc-repo::,create-pre-push,install-wpilib:" -- "$@")
 [[ $? -ne 0 ]] && exit 1
 eval set -- "$opts"
 unset opts
@@ -19,10 +18,22 @@ declare -A opts
 
 while true; do
     case "$1" in
-        "-u"|"--uninstall-wpilib") opts[uninstall]="$2"; shift 2;;
-        "-g"|"--setup-git") opts[]
+        "-u"|"--uninstall-wpilib")    opts[uninstall]="$2"; shift 2;;
+        "-g"|"--setup-git")           opts[setup_git]=true; shift 1;;
+        "-i"|"--install-needed-pkgs") opts[pkgs]=true;      shift 1;;
+        "-l"|"--gh-login")            opts[gh]=true;        shift 1;;
+        "-c"|"--clone-frc-repo")      opts[clone]="$2";     shift 2;;
+        "-p"|"--create-pre-push")     opts[prepush]=true;   shift 1;;
+        "-w"|"--install-wpilib")      opts[wpilib]="$2";    shift 2;;
+        "--")                         shift;                break  ;;
+        *)                            opts[help]=true;      break  ;;
     esac
 done
+
+# curl --silent https://raw.githubusercontent.com/team5735/SoftwareTraining/refs/heads/main/setup.lua |\
+#     lua - "${opts[@]@k}"
+cat setup.lua | lua - "${opts[@]@k}" "$@"
+exit $?
 
 function die {
     echo "$1"
