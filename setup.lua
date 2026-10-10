@@ -126,6 +126,8 @@ end
 
 ----- end of lua implementation of getopt_long(3) -----
 
+---@overload fun(cmd: string): string, true?, "exit" | "signal"?, number?
+---@overload fun(cmd: string, perline: true): string[], true?, "exit" | "signal"?, number?
 local function sh(cmd, perline)
     local handle = assert(io.popen(cmd))
     local stdout
@@ -138,28 +140,34 @@ local function sh(cmd, perline)
     return stdout, handle:close()
 end
 
-local function fsh(fmt, ...) return sh(fmt:format(...), false) end
-local function esh(fmt, ...) if not os.execute(fmt:format(...)) then die("cmd failed: %s", fmt:format(...)) end end
-local function println(fmt, ...) io.write(string.format(fmt .. "\n", ...)) end
-
 local function die(fmt, ...)
     io.stderr:write(string.format(fmt .. "\n", ...))
     os.exit(1)
 end
 
+local function fsh(fmt, ...) return sh(fmt:format(...)) end
+local function esh(fmt, ...) if not os.execute(fmt:format(...)) then die("cmd failed: %s", fmt:format(...)) end end
+local function println(fmt, ...) io.write(string.format(fmt .. "\n", ...)) end
+
+---@return boolean
 local function yesno(fmt, ...)
     io.write(string.format(fmt, ...) .. " (y/n)? ")
     local response = io.read("*l")
     return response:lower() == "y"
 end
 
-local function join(str, tbl)
+---@generic T
+---@param sep string separator
+---@param tbl T[] list to join over sep
+---@return string
+local function join(sep, tbl)
     local res = ""
-    for _, v in ipairs(tbl) do res = res .. v .. str end
+    for _, v in ipairs(tbl) do res = res .. v .. sep end
     res = res:sub(1, -2)
     return res
 end
 
+---@return string[]
 local function installed_pkgs()
     if _G.have then return _G.have end
     local have = {}
@@ -169,9 +177,9 @@ local function installed_pkgs()
     return have
 end
 
-
+---if username is of the form firstname_lastname, parse to get firstname and lastname
+---@return string?, string? # guesses
 local function try_guess_name()
-    -- expected format: firstname_lastname
     local username = os.getenv("USER")
     if not username then return end
     local underscore = username:find("_")
@@ -181,6 +189,8 @@ end
 
 local function upperone(s) return s:sub(1, 1):upper() .. s:sub(2) end
 
+---@return string firstname
+---@return string lastname
 local function get_firstname_lastname()
     local firstname, lastname = try_guess_name()
 
@@ -201,22 +211,25 @@ local function get_firstname_lastname()
     return firstname, lastname
 end
 
+---@param firstname string
+---@param lastname string
 local function set_git_ids(firstname, lastname)
     assert(installed_pkgs()["git"])
+    assert(firstname, lastname)
     fsh([[
     git config --global user.name "%s %s"
     git config --global user.email "%s_%s@student.waylandps.org"
     ]], firstname, lastname)
 end
 
-local needed_pkgs = {
-    "wget", "pv", "pigz", "tar", "git", "gh", "libicu-dev", "libnspr4", "libnss3", "clang-format"
+local default_install_packages = {
+    "wget", "pv", "pigz", "tar", "git", "gh", "libicu-dev", "libnspr4", "libnss3", "clang-format", "nautilus"
 }
 
 local function setup_git() set_git_ids(get_firstname_lastname()) end
 
 local function install_pkgs(requested)
-    requested = requested or needed_pkgs
+    requested = requested or default_install_packages
 
     local to_install = {}
     for _, pkg in pairs(requested) do
@@ -225,19 +238,21 @@ local function install_pkgs(requested)
     if not next(to_install) then return end
 
     println("installing %d packages", #to_install)
-    esh[[sudo apt-get update]]
+    esh [[sudo apt-get update]]
     esh([[sudo apt-get install --yes %s]], join(" ", to_install))
     for _, v in pairs(to_install) do _G.have[v] = true end
 end
 
 local function install_gitkraken()
-    sh [[
+    esh [[
     wget -O /tmp/gitkraken.deb https://release.gitkraken.com/linux/gitkraken-amd64.deb
     sudo apt-get install --yes /tmp/gitkraken.deb
     rm /tmp/gitkraken.deb
     ]]
 end
 
+---@param path string input path
+---@return string path like realpath but not with symlinks
 local function absolute_path(path)
     local homedir = os.getenv("HOME")
     if path:sub(1, 1) == "~" then return homedir .. path:sub(2) end
@@ -306,6 +321,7 @@ local function gh_login()
     os.execute [[gh auth login --git-protocol HTTPS --hostname github.com --web]]
 end
 
+---@param where_to string target for cloning operations
 local function clone_frc_repo(where_to)
     where_to = absolute_path(where_to or "~/FRC/")
     local lfs = need_lfs()
@@ -317,6 +333,7 @@ local function clone_frc_repo(where_to)
     ]], where_to)
 end
 
+---@param repo_dir string what repo to setup pre-push for
 local function create_pre_push(repo_dir)
     repo_dir = absolute_path(repo_dir or "~/FRC/")
     local pre_push_path = repo_dir .. "/.git/hooks/pre-push"
@@ -365,7 +382,7 @@ end
 local function check_can_reach_archive(version)
     local _, _, _, url = parse_version(version)
     local output = sh([[2>&1 wget --spider ]] .. url .. " && echo (reached endpoint successfully)")
-    if not output.match("(reached endpoint successfully)") then
+    if not output:match("(reached endpoint successfully)") then
         io.write(output)
         die("i can't reach the WPILib archive right now, try again later")
     end
@@ -392,7 +409,7 @@ local function install_wpilib(version, dont_check)
     if is_2027 then
         fsh([[ %s/WPILibInstaller-CLI --yes --install-mode all ]], dir)
     else
-        println[[
+        println [[
 
         instructions for the installer window:
         press "Start", "Install for this User", then "Download for this computer only"
