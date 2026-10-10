@@ -139,6 +139,7 @@ local function sh(cmd, perline)
 end
 
 local function fsh(fmt, ...) return sh(fmt:format(...), false) end
+local function esh(fmt, ...) if not os.execute(fmt:format(...)) then die("cmd failed: %s", fmt:format(...)) end end
 local function println(fmt, ...) io.write(string.format(fmt .. "\n", ...)) end
 
 local function die(fmt, ...)
@@ -201,7 +202,7 @@ local function get_firstname_lastname()
 end
 
 local function set_git_ids(firstname, lastname)
-    assert(installed_pkgs["git"])
+    assert(installed_pkgs()["git"])
     fsh([[
     git config --global user.name "%s %s"
     git config --global user.email "%s_%s@student.waylandps.org"
@@ -224,15 +225,15 @@ local function install_pkgs(requested)
     if not next(to_install) then return end
 
     println("installing %d packages", #to_install)
-    os.execute("sudo apt-get update")
-    os.execute("sudo apt-get install " .. join(" ", to_install))
+    esh[[sudo apt-get update]]
+    esh([[sudo apt-get install --yes %s]], join(" ", to_install))
     for _, v in pairs(to_install) do _G.have[v] = true end
 end
 
 local function install_gitkraken()
     sh [[
     wget -O /tmp/gitkraken.deb https://release.gitkraken.com/linux/gitkraken-amd64.deb
-    sudo apt install /tmp/gitkraken.deb
+    sudo apt-get install --yes /tmp/gitkraken.deb
     rm /tmp/gitkraken.deb
     ]]
 end
