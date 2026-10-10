@@ -155,7 +155,7 @@ end
 local function join(str, tbl)
     local res = ""
     for _, v in ipairs(tbl) do res = res .. v .. str end
-    res = res:sub(1, - #res)
+    res = res:sub(1, -2)
     return res
 end
 
