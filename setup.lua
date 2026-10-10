@@ -243,23 +243,6 @@ local function install_pkgs(requested)
     for _, v in pairs(to_install) do _G.have[v] = true end
 end
 
-local function install_gitkraken()
-    esh [[
-    wget -O /tmp/gitkraken.deb https://release.gitkraken.com/linux/gitkraken-amd64.deb
-    sudo apt-get install --yes /tmp/gitkraken.deb
-    rm /tmp/gitkraken.deb
-    ]]
-end
-
----@param path string input path
----@return string path like realpath but not with symlinks
-local function absolute_path(path)
-    local homedir = os.getenv("HOME")
-    if path:sub(1, 1) == "~" then return homedir .. path:sub(2) end
-    if path:sub(1, 1) == "/" then return path end
-    return os.getenv("PWD") .. "/" .. path
-end
-
 -- documentation for lfs in the form of type annotations
 --
 -- when something returns T?, string?, it either returns T or nil, string
@@ -310,6 +293,21 @@ local function need_lfs()
     local success, lfs = pcall(require, "lfs")
     if not success then die("need lfs installed (lua-filesystem on debian)") end
     return lfs
+end
+
+local function install_gitkraken()
+    local attrs = need_lfs().attributes("/tmp/gitkraken.deb")
+    if not attrs then esh [[ wget -O /tmp/gitkraken.deb https://release.gitkraken.com/linux/gitkraken-amd64.deb ]] end
+    if not installed_pkgs()["gitkraken"] then esh [[ sudo apt-get install --yes /tmp/gitkraken.deb ]] end
+end
+
+---@param path string input path
+---@return string path like realpath but not with symlinks
+local function absolute_path(path)
+    local homedir = os.getenv("HOME")
+    if path:sub(1, 1) == "~" then return homedir .. path:sub(2) end
+    if path:sub(1, 1) == "/" then return path end
+    return os.getenv("PWD") .. "/" .. path
 end
 
 local function gh_login()
