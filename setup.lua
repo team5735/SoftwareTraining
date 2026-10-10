@@ -461,7 +461,7 @@ local options = {
 
 if #arg == 0 then
     io.stderr:write("when giving no arguments, you have to give a wpilib version")
-elseif #arg == 1 then
+elseif #arg == 1 and arg[1]:sub(1, 1) ~= "-" then
     local firstname, lastname = get_firstname_lastname()
     install_pkgs()
     install_gitkraken()
