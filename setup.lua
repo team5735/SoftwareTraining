@@ -337,7 +337,10 @@ local function create_pre_push(repo_dir)
     local pre_push_path = repo_dir .. "/.git/hooks/pre-push"
     local lfs = need_lfs()
 
-    if lfs.attributes(pre_push_path) then os.rename(pre_push_path, repo_dir .. "/.git/hooks/pre-push.bak") end
+    if lfs.attributes(pre_push_path) then
+        println("note: %s already exists, renaming it to .bak...", pre_push_path)
+        os.rename(pre_push_path, pre_push_path .. ".bak")
+    end
     local fd = assert(io.open(pre_push_path, "w"))
     fd:write([===[
 #!/bin/bash
