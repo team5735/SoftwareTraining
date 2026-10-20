@@ -219,7 +219,7 @@ local function set_git_ids(firstname, lastname)
     fsh([[
     git config --global user.name "%s %s"
     git config --global user.email "%s_%s@student.waylandps.org"
-    ]], firstname, lastname)
+    ]], firstname, lastname, firstname, lastname)
 end
 
 local default_install_packages = {
@@ -382,7 +382,7 @@ end
 
 local function check_can_reach_archive(version)
     local _, _, _, url = parse_version(version)
-    local output = sh([[2>&1 wget --spider ]] .. url .. " && echo (reached endpoint successfully)")
+    local output = sh([[2>&1 wget --spider ]] .. url .. " && echo '(reached endpoint successfully)'")
     if not output:match("(reached endpoint successfully)") then
         io.write(output)
         die("i can't reach the WPILib archive right now, try again later")
@@ -404,11 +404,11 @@ local function install_wpilib(version, dont_check)
         size="$(pigz --list "$file" | cut --delimiter ' ' --fields 2)"
         unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size "$size" | tar --extract --file -
         rm "$file"
-        ]], dir, url, file)
+        ]], dir, file, url)
     end
 
     if is_2027 then
-        fsh([[ %s/WPILibInstaller-CLI --yes --install-mode all ]], dir)
+        fsh([[%s/WPILibInstaller-CLI --yes --install-mode all]], dir)
     else
         println [[
 
@@ -417,7 +417,7 @@ local function install_wpilib(version, dont_check)
         when it becomes available, press the button labeled "Next"
         after installation has succeeded, press "Finish"
         ]]
-        fsh([[ %s/WPILibInstaller ]], dir)
+        fsh([[%s/WPILibInstaller]], dir)
     end
 end
 
