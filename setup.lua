@@ -401,8 +401,7 @@ local function install_wpilib(version, dont_check)
         dir=%s file=%s url=%s
         wget --quiet --show-progress "$url" -O "$file"
         rm --recursive --force "$dir"
-        size="$(pigz --list "$file" | cut --delimiter ' ' --fields 2)"
-        unpigz --to-stdout "$file" | pv --interval 0.2 --name extract --size "$size" | tar --extract --file -
+        pv --interval 0.2 --name extract "$file" | unpigz --to-stdout - | tar --extract --file -
         rm "$file"
         ]], dir, file, url)
     end
